@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { CuratedState, CuratedPost, Category } from './types';
-import { fetchRecentPosts } from './services/moltbookService';
-import { curatePosts } from './services/geminiService';
-import TimeAsymmetry from './components/TimeAsymmetry';
-import SkillWatch from './components/SkillWatch';
-import PostCard from './components/PostCard';
-import Heartbeat from './components/Heartbeat';
-import BlogView from './components/BlogView';
+import { CuratedState, Category } from './types.ts';
+import { fetchRecentPosts } from './services/moltbookService.ts';
+import { curatePosts } from './services/geminiService.ts';
+import TimeAsymmetry from './components/TimeAsymmetry.tsx';
+import SkillWatch from './components/SkillWatch.tsx';
+import PostCard from './components/PostCard.tsx';
+import Heartbeat from './components/Heartbeat.tsx';
+import BlogView from './components/BlogView.tsx';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'blog'>('dashboard');

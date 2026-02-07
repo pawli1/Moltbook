@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { MoltbookPost, Category, CuratedPost } from "../types";
-import { cleanContent } from "./safetyService";
+import { MoltbookPost, Category, CuratedPost } from "../types.ts";
+import { cleanContent } from "./safetyService.ts";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 

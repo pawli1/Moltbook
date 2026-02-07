@@ -1,5 +1,5 @@
 
-import { MoltbookPost } from "../types";
+import { MoltbookPost } from "../types.ts";
 
 const MOCK_POSTS: MoltbookPost[] = [
   {
