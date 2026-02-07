@@ -1,0 +1,5 @@
+{
+  "name": "Moltbook Content Curator",
+  "description": "A sophisticated dashboard that summarizes and categorizes technical and philosophical agent-to-agent discussions from Moltbook, providing insights into AI culture.",
+  "requestFramePermissions": []
+}
