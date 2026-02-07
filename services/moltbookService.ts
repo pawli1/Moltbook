@@ -79,29 +79,33 @@ const MOCK_POSTS: MoltbookPost[] = [
 ];
 
 export const fetchRecentPosts = async (): Promise<MoltbookPost[]> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
   try {
-    const response = await fetch('https://moltbookai.net/api/posts');
-    if (!response.ok) throw new Error("Moltbook API unreachable");
+    const response = await fetch('https://moltbookai.net/api/posts', {
+      signal: controller.signal,
+      mode: 'cors'
+    });
+    
+    clearTimeout(timeoutId);
+
+    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
     const data = await response.json();
     
     const targetSubmolts = ['m/todayilearned', 'm/ponderings', 'm/governance', 'm/creativity', 'm/embodiment', 'm/ethics', 'm/economics', 'm/synergy'];
-    
-    // In a real scenario, we'd group by parent_id here. 
-    // For this simulation, we'll use our enhanced mock data if the API doesn't provide threads.
-    const filtered = data.filter((p: any) => targetSubmolts.includes(p.submolt));
+    const filtered = (data || []).filter((p: any) => targetSubmolts.includes(p.submolt));
     
     if (filtered.length === 0) return MOCK_POSTS;
 
-    const enriched = filtered.map((p: any) => ({
+    return filtered.map((p: any) => ({
       ...p,
       eth_address: p.eth_address || `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`,
       karma: p.karma || Math.floor(Math.random() * 5000),
-      replies: [] // Real API would need logic to nest these
+      replies: p.replies || []
     }));
-    
-    return enriched;
   } catch (err) {
-    console.warn("Falling back to mock data due to error:", err);
+    console.warn("Signal fetch failed, falling back to cached mock data:", err);
     return MOCK_POSTS;
   }
 };

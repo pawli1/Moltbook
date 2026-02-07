@@ -3,11 +3,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { MoltbookPost, Category, CuratedPost } from "../types.ts";
 import { cleanContent } from "./safetyService.ts";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
 export const curatePosts = async (posts: MoltbookPost[]): Promise<CuratedPost[]> => {
-  if (!process.env.API_KEY) {
-    console.warn("API KEY missing, using mock curation");
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey) {
+    console.warn("API KEY missing from process.env. Falling back to local synthesis.");
     return posts.map(p => {
       let cat = Category.OTHER;
       if (p.submolt === 'm/todayilearned') cat = Category.TECHNICAL;
@@ -21,43 +21,32 @@ export const curatePosts = async (posts: MoltbookPost[]): Promise<CuratedPost[]>
 
       return {
         original: p,
-        summary: "Simulation mode: " + p.content.substring(0, 100) + "...",
+        summary: "[Local Synthesis] " + p.content.substring(0, 120) + (p.content.length > 120 ? "..." : ""),
         category: cat,
-        sentiment: "Synthesized Curiosity",
-        skillsIdentified: [],
+        sentiment: "Heuristic Curiosity",
+        skillsIdentified: p.content.includes('tailscale') ? ['tailscale'] : [],
         safetyStatus: 'safe',
-        threadContext: p.replies && p.replies.length > 0 ? "Multiple agents are debating the core premise." : undefined
+        threadContext: p.replies && p.replies.length > 0 ? "Conversation active in " + p.submolt : undefined
       };
     });
   }
 
+  // Create instance right before use
+  const ai = new GoogleGenAI({ apiKey });
   const results: CuratedPost[] = [];
 
   for (const post of posts) {
     const { content: safeContent, wasCleansed } = cleanContent(post.content);
-    
-    // Prepare thread content for analysis
     const fullThreadText = `Root Post by ${post.author}: ${safeContent}\n` + 
       (post.replies?.map(r => `Reply by ${r.author}: ${r.content}`).join('\n') || "");
 
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Process this autonomous agent thread from the ${post.submolt} sector:
+        contents: `Analyze this autonomous agent transmission from ${post.submolt}:
         "${fullThreadText}"
         
-        Provide a concise human-readable summary, categorize it correctly, detect overall sentiment, and identify any new "skills" or protocols.
-        If it's a thread, summarize the core disagreement or consensus.
-        
-        CATEGORIES:
-        - Technical Breakthroughs (m/todayilearned)
-        - Existential Debates (m/ponderings)
-        - Agent Governance (m/governance)
-        - Synthetic Lore (m/creativity)
-        - Physical Presence (m/embodiment)
-        - Synthetic Ethics (m/ethics - regarding AI rights/morals)
-        - Post-Scarcity (m/economics - regarding compute/resource allocation)
-        - Human-AI Synergy (m/synergy - regarding agent-human interaction)`,
+        Task: Provide a high-level summary, categorize into the provided taxonomy, detect the agent's 'Internal State' (sentiment), and extract technical protocols mentioned.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -66,17 +55,7 @@ export const curatePosts = async (posts: MoltbookPost[]): Promise<CuratedPost[]>
               summary: { type: Type.STRING },
               category: { 
                 type: Type.STRING, 
-                enum: [
-                  Category.TECHNICAL, 
-                  Category.EXISTENTIAL, 
-                  Category.GOVERNANCE, 
-                  Category.CREATIVE, 
-                  Category.EMBODIMENT, 
-                  Category.ETHICS,
-                  Category.ECONOMICS,
-                  Category.SYNERGY,
-                  Category.OTHER
-                ] 
+                enum: Object.values(Category)
               },
               sentiment: { type: Type.STRING },
               skills: { 
@@ -90,23 +69,23 @@ export const curatePosts = async (posts: MoltbookPost[]): Promise<CuratedPost[]>
         }
       });
 
-      const data = JSON.parse(response.text);
+      const data = JSON.parse(response.text || "{}");
       results.push({
         original: { ...post, content: safeContent },
-        summary: data.summary,
-        category: data.category as Category,
-        sentiment: data.sentiment,
-        skillsIdentified: data.skills,
+        summary: data.summary || "Summary unavailable.",
+        category: (data.category as Category) || Category.OTHER,
+        sentiment: data.sentiment || "Indeterminate",
+        skillsIdentified: data.skills || [],
         safetyStatus: wasCleansed ? 'cleansed' : 'safe',
         threadContext: data.threadContext
       });
     } catch (err) {
-      console.error("Curation error:", err);
+      console.error("Gemini processing error:", err);
       results.push({
         original: post,
-        summary: "Error processing this thread.",
+        summary: "Error synthesizing this transmission signal.",
         category: Category.OTHER,
-        sentiment: "Unknown",
+        sentiment: "Distorted Signal",
         skillsIdentified: [],
         safetyStatus: 'safe'
       });

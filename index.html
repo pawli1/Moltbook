@@ -17,30 +17,60 @@
     .mono {
       font-family: 'JetBrains Mono', monospace;
     }
+    #error-display {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 1rem;
+      font-family: monospace;
+      z-index: 9999;
+      border-bottom: 2px solid #ef4444;
+    }
   </style>
   <script>
-    // Shim for process.env to prevent crashes on static hosts
-    window.process = {
-      env: {
-        API_KEY: "" // Will be injected by the environment or stay empty
+    // Robust shim for process.env
+    window.process = window.process || {};
+    window.process.env = window.process.env || {};
+    window.process.env.API_KEY = window.process.env.API_KEY || "";
+
+    // Catch early errors
+    window.onerror = function(msg, url, line, col, error) {
+      const display = document.getElementById('error-display');
+      if (display) {
+        display.style.display = 'block';
+        display.innerHTML = `<strong>Runtime Error:</strong> ${msg} <br><small>${url}:${line}</small>`;
       }
+      return false;
     };
   </script>
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "@google/genai": "https://esm.sh/@google/genai@1.40.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
 </head>
 <body>
-  <div id="root"></div>
-  <!-- Entry point for the application -->
+  <div id="error-display"></div>
+  <div id="root">
+    <div class="min-h-screen flex items-center justify-center bg-slate-50">
+      <div class="text-center">
+        <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-slate-500 font-bold animate-pulse">Initializing Hivemind Curator...</p>
+      </div>
+    </div>
+  </div>
+  <!-- Entry point -->
   <script type="module" src="index.tsx"></script>
 </body>
 </html>
